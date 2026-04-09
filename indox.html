@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReputaGT - Responde reseñas en segundos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
+        header { background: #e85d04; padding: 20px 40px; color: white; }
+        header h1 { font-size: 24px; }
+        header p { font-size: 13px; opacity: 0.85; }
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .card { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 24px; }
+        .card h2 { font-size: 18px; color: #1a1a1a; margin-bottom: 16px; }
+        textarea { width: 100%; height: 140px; border: 2px solid #e0e0e0; border-radius: 10px; padding: 14px; font-size: 15px; resize: vertical; font-family: inherit; }
+        textarea:focus { outline: none; border-color: #e85d04; }
+        input { width: 100%; border: 2px solid #e0e0e0; border-radius: 10px; padding: 12px 14px; font-size: 15px; margin-bottom: 20px; font-family: inherit; }
+        input:focus { outline: none; border-color: #e85d04; }
+        .tonos { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+        .tono-btn { padding: 10px 20px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-size: 14px; color: #333; }
+        .tono-btn.activo { background: #e85d04; border-color: #e85d04; color: white; }
+        .generar-btn { width: 100%; background: #e85d04; color: white; border: none; padding: 16px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .generar-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .resultado { display: none; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .resultado h2 { font-size: 18px; margin-bottom: 16px; }
+        .respuesta-texto { background: #fff8f5; border: 2px solid #ffd4b8; border-radius: 10px; padding: 20px; font-size: 15px; line-height: 1.7; white-space: pre-wrap; }
+        .copiar-btn { margin-top: 16px; padding: 12px 24px; background: white; border: 2px solid #e85d04; color: #e85d04; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .loading { text-align: center; padding: 20px; color: #e85d04; display: none; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>🍽️ ReputaGT</h1>
+    <p>Responde reseñas de Google en segundos</p>
+</header>
+<div class="container">
+    <div class="card">
+        <h2>¿Cuál es el nombre de tu restaurante?</h2>
+        <input type="text" id="nombreRestaurante" placeholder="Ej: Restaurante El Rincón Guatemalteco">
+        <h2>Pega aquí la reseña de Google</h2>
+        <textarea id="resena" placeholder="Ej: La comida tardó mucho y estaba fría..."></textarea>
+        <div class="tonos">
+            <button class="tono-btn activo" onclick="elegirTono(this, 'amigable')">😊 Amigable</button>
+            <button class="tono-btn" onclick="elegirTono(this, 'formal')">👔 Formal</button>
+            <button class="tono-btn" onclick="elegirTono(this, 'disculpa')">🙏 Disculpa sincera</button>
+        </div>
+        <button class="generar-btn" onclick="generarRespuesta()">✨ Generar Respuesta</button>
+    </div>
+    <div class="loading" id="loading">⏳ Generando tu respuesta profesional...</div>
+    <div class="resultado" id="resultado">
+        <h2>✅ Respuesta lista para publicar</h2>
+        <div class="respuesta-texto" id="respuestaTexto"></div>
+        <button class="copiar-btn" onclick="copiarRespuesta()">📋 Copiar respuesta</button>
+    </div>
+</div>
+<script>
+    let tonoSeleccionado = 'amigable';
+    function elegirTono(btn, tono) {
+        document.querySelectorAll('.tono-btn').forEach(b => b.classList.remove('activo'));
+        btn.classList.add('activo');
+        tonoSeleccionado = tono;
+    }
+    async function generarRespuesta() {
+        const nombre = document.getElementById('nombreRestaurante').value.trim();
+        const resena = document.getElementById('resena').value.trim();
+        if (!nombre) { alert('Por favor escribe el nombre de tu restaurante'); return; }
+        if (!resena) { alert('Por favor pega una reseña de Google'); return; }
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultado').style.display = 'none';
+        document.querySelector('.generar-btn').disabled = true;
+        try {
+            const response = await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, resena, tono: tonoSeleccionado })
+            });
+            const data = await response.json();
+            document.getElementById('respuestaTexto').textContent = data.respuesta;
+            document.getElementById('resultado').style.display = 'block';
+        } catch (err) {
+            alert('Error al generar respuesta. Intenta de nuevo.');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            document.querySelector('.generar-btn').disabled = false;
+        }
+    }
+    function copiarRespuesta() {
+        navigator.clipboard.writeText(document.getElementById('respuestaTexto').textContent);
+        const btn = document.querySelector('.copiar-btn');
+        btn.textContent = '✅ ¡Copiado!';
+        setTimeout(() => btn.textContent = '📋 Copiar respuesta', 2000);
+    }
+</script>
+</body>
+</html>
